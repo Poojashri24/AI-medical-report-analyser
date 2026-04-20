@@ -99,50 +99,82 @@ GEN AI/
 │── .gitignore
 │── README.md
 
+```
+---
+
 ⚙️ Installation
 1️⃣ Clone Project
-git clone https://github.com/yourusername/mediassist-ai.git
-cd mediassist-ai
+```bash
+git clone https://github.com/Poojashri24/AI-medical-report-analyser
+cd AI-medical-report-analyser
+```
+
+---
 
 2️⃣ Backend Setup
+```bash
 cd backend
 npm install
+```
 Create .env
 PORT=5000
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_secret_key
 Run Backend
+```bash
 npm run dev
+```
+
+---
 
 3️⃣ Frontend Setup
+```bash
 cd frontend
 npm install
 npm run dev
+```
+
+---
 
 4️⃣ AI Service Setup
+```bash
 cd ai-service
 pip install -r requirements.txt
+```
 Create .env
 GROQ_API_KEY=your_groq_key
 Run AI Service
+```bash
 uvicorn main:app --reload --port 8000
+```
+
+---
 
 🚀 API Routes
 🔐 Auth
 POST /api/auth/register
 POST /api/auth/login
 
+---
+
 📄 Reports
 GET /api/reports
 POST /api/reports
 
+---
+
 🤖 Chat
 POST /api/chat
 GET /api/chat-history
+
+---
+
 ⚡ AI Service
 POST /extract-text
 POST /extract-labs
 POST /chat
+
+---
 
 📊 Dashboard Features
 Reports Count
@@ -153,10 +185,14 @@ Compare Reports
 AI Chat
 PDF Summary
 
+---
+
 🔐 Security
 JWT Protected Routes
 Hidden API Keys in .env
 Secure Uploads
+
+---
 
 🌟 Future Enhancements
 Doctor Recommendation
@@ -165,6 +201,8 @@ Voice Assistant
 Cloud Deployment
 Mobile App
 Multi-language Support
+
+---
 
 👨‍💻 Author
 

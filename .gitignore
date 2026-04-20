@@ -1,0 +1,21 @@
+# env
+.env
+
+# node
+node_modules/
+
+# python
+venv/
+__pycache__/
+*.pyc
+
+# uploads
+uploads/
+
+# build
+dist/
+build/
+
+# editor
+.vscode/
+.idea/

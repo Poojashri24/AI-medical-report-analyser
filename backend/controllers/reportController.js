@@ -1,5 +1,6 @@
 const Report = require("../models/Report");
 const fs = require("fs");
+const pdfParse = require("pdf-parse");
 
 exports.uploadReport = async (req, res) => {
   try {
@@ -9,14 +10,19 @@ exports.uploadReport = async (req, res) => {
       });
     }
 
+    const pdfBuffer = fs.readFileSync(req.file.path);
+
+    const pdfData = await pdfParse(pdfBuffer);
+
+    const extractedText = pdfData.text;
+
     const report = await Report.create({
       user: req.user.id,
       fileName: req.file.filename,
       filePath: req.file.path,
-      extractedText: "Medical report uploaded successfully"
+      extractedText
     });
 
-    // Delete uploaded file after saving report info
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }

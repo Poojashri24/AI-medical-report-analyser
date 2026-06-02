@@ -1,6 +1,6 @@
 const Report = require("../models/Report");
 const axios = require("axios");
-const pdfParse = require("pdf-parse");
+const pdf = require("pdf-parse");
 const fs = require("fs");
 
 exports.uploadReport = async (req, res) => {
@@ -13,7 +13,7 @@ exports.uploadReport = async (req, res) => {
 
     const pdfBuffer = fs.readFileSync(req.file.path);
 
-    const pdfData = await pdfParse(pdfBuffer);
+    const pdfData = await pdf(pdfBuffer);
 
     const extractedText = pdfData.text;
 

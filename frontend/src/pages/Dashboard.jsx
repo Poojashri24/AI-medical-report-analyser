@@ -51,7 +51,7 @@ function Dashboard() {
   const fetchReports = async () => {
     try {
       const { data } = await axios.get(
-        "http://localhost:5000/api/reports",
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports`,
         {
           headers: {
             Authorization: `Bearer ${user.token}`,
@@ -69,7 +69,7 @@ function Dashboard() {
   const fetchChatHistory = async () => {
     try {
       const { data } = await axios.get(
-        "http://localhost:5000/api/chat-history",
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat-history`,
         {
           headers: {
             Authorization: `Bearer ${user.token}`,
@@ -115,7 +115,7 @@ function Dashboard() {
   const fetchLabs = async (text) => {
     try {
       const { data } = await axios.post(
-        "http://localhost:8000/extract-labs",
+        `${import.meta.env.VITE_AI_URL}/extract-labs`,
         {
           report_text: text,
           question: "extract",
@@ -144,7 +144,7 @@ function Dashboard() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/reports",
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports`,
         formData,
         {
           headers: {
@@ -182,7 +182,7 @@ function Dashboard() {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:5000/api/chat",
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat`,
         {
           question: currentQuestion,
         },
@@ -205,7 +205,7 @@ function Dashboard() {
 
       // SAVE CHAT TO DB
       await axios.post(
-        "http://localhost:5000/api/chat-history",
+        `${import.meta.env.VITE_BACKEND_URL}/api/chat-history`,
         {
           question: currentQuestion,
           answer: botReply,

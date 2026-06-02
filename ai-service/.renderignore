@@ -1,0 +1,5 @@
+build_vector.py
+data/
+faiss_index.bin
+metadata.pkl
+__pycache__/

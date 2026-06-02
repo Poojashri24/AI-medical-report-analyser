@@ -24,8 +24,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -61,7 +60,19 @@ app.add_middleware(
 # ==================================================
 # LOAD EMBEDDING MODEL
 # ==================================================
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+# ==================================================
+# LOAD EMBEDDING MODEL (LAZY LOAD)
+# ==================================================
+embed_model = None
+
+def get_model():
+    global embed_model
+
+    if embed_model is None:
+        print("Loading SentenceTransformer...")
+        embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+    return embed_model
 
 # ==================================================
 # LOAD FAISS INDEX + METADATA
@@ -143,7 +154,9 @@ def chat(data: ChatRequest):
         question = data.question.strip()
 
         # Create query embedding
-        query_embedding = embed_model.encode([question])
+        model = get_model()
+
+        query_embedding = model.encode([question])
         query_embedding = np.array(query_embedding).astype("float32")
 
         # Search top result

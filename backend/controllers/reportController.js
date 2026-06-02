@@ -16,7 +16,7 @@ exports.uploadReport = async (req, res) => {
 
     // Send file path to Python AI service
     const aiResponse = await axios.post(
-      "https://mediassist-ai-6rl9.onrender.com/extract-text",
+      "https://mediassist-ai-6r19.onrender.com/extract-text",
       {
         file_path: req.file.path
       }

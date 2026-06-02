@@ -1,6 +1,4 @@
 const Report = require("../models/Report");
-const axios = require("axios");
-const pdf = require("pdf-parse");
 const fs = require("fs");
 
 exports.uploadReport = async (req, res) => {
@@ -11,21 +9,17 @@ exports.uploadReport = async (req, res) => {
       });
     }
 
-    const pdfBuffer = fs.readFileSync(req.file.path);
-
-    const pdfData = await pdf(pdfBuffer);
-
-    const extractedText = pdfData.text;
-
     const report = await Report.create({
       user: req.user.id,
       fileName: req.file.filename,
       filePath: req.file.path,
-      extractedText
+      extractedText: "Medical report uploaded successfully"
     });
 
-    // delete uploaded file after extraction
-    fs.unlinkSync(req.file.path);
+    // Delete uploaded file after saving report info
+    if (fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
 
     res.status(201).json({
       message: "Upload Success",
@@ -40,6 +34,7 @@ exports.uploadReport = async (req, res) => {
     });
   }
 };
+
 exports.getMyReports = async (req, res) => {
   try {
     const reports = await Report.find({
@@ -47,6 +42,7 @@ exports.getMyReports = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(reports);
+
   } catch (error) {
     res.status(500).json({
       message: error.message

@@ -16,7 +16,7 @@ exports.chatWithReport = async (req, res) => {
     }
 
     const aiResponse = await axios.post(
-      "http://localhost:8000/chat",
+      "https://mediassist-ai-6rl9.onrender.com/chat",
       {
         report_text: latestReport.extractedText,
         question

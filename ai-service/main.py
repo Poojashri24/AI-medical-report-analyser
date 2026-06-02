@@ -3,10 +3,6 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 import fitz
-import faiss
-import pickle
-import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from groq import Groq
 from dotenv import load_dotenv
@@ -60,30 +56,8 @@ app.add_middleware(
 # ==================================================
 # LOAD EMBEDDING MODEL
 # ==================================================
-# ==================================================
-# LOAD EMBEDDING MODEL (LAZY LOAD)
-# ==================================================
-embed_model = None
 
-def get_model():
-    global embed_model
 
-    if embed_model is None:
-        print("Loading SentenceTransformer...")
-        embed_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-    return embed_model
-
-# ==================================================
-# LOAD FAISS INDEX + METADATA
-# ==================================================
-index = faiss.read_index("faiss_index.bin")
-
-with open("metadata.pkl", "rb") as f:
-    meta = pickle.load(f)
-
-texts = meta["texts"]
-sources = meta["sources"]
 
 # ==================================================
 # REQUEST MODELS
@@ -148,35 +122,16 @@ def extract_text(data: FileRequest):
 # ==================================================
 # CHAT WITH RAG
 # ==================================================
+# ==================================================
+# CHAT
+# ==================================================
 @app.post("/chat")
 def chat(data: ChatRequest):
     try:
         question = data.question.strip()
 
-        # Create query embedding
-        model = get_model()
-
-        query_embedding = model.encode([question])
-        query_embedding = np.array(query_embedding).astype("float32")
-
-        # Search top result
-        D, I = index.search(query_embedding, k=1)
-
-        best_index = int(I[0][0])
-        context = texts[best_index]
-        source = sources[best_index]
-
-        # Prompt
         prompt = f"""
 You are a professional healthcare AI assistant.
-
-Use the retrieved medical knowledge and patient report.
-
-Retrieved Context:
-{context}
-
-Source:
-{source}
 
 Patient Report:
 {data.report_text}
@@ -189,6 +144,7 @@ Instructions:
 - Mention possible meaning
 - Suggest healthy next steps
 - Do not give final diagnosis
+- Keep answers concise and easy to understand
 """
 
         response = client.chat.completions.create(
@@ -199,7 +155,7 @@ Instructions:
                     "content": prompt
                 }
             ],
-            temperature=0.4,
+            temperature=0.4
         )
 
         answer = response.choices[0].message.content

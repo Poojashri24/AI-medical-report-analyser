@@ -1,41 +1,39 @@
 const Report = require("../models/Report");
 const axios = require("axios");
+const pdfParse = require("pdf-parse");
+const fs = require("fs");
 
 exports.uploadReport = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+      return res.status(400).json({
+        message: "No file uploaded"
+      });
     }
 
-    // Save initial report
-    let report = await Report.create({
+    const pdfBuffer = fs.readFileSync(req.file.path);
+
+    const pdfData = await pdfParse(pdfBuffer);
+
+    const extractedText = pdfData.text;
+
+    const report = await Report.create({
       user: req.user.id,
       fileName: req.file.filename,
-      filePath: req.file.path
+      filePath: req.file.path,
+      extractedText
     });
 
-    // Send file path to Python AI service
-    const aiResponse = await axios.post(
-      "https://mediassist-ai-6r19.onrender.com/extract-text",
-      {
-        file_path: req.file.path
-      }
-    );
-
-    const extractedText =
-      aiResponse.data.text || "";
-
-    // Update MongoDB with extracted text
-    report.extractedText = extractedText;
-    await report.save();
+    // delete uploaded file after extraction
+    fs.unlinkSync(req.file.path);
 
     res.status(201).json({
-      message: "Upload + Extraction Success",
+      message: "Upload Success",
       report
     });
 
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
 
     res.status(500).json({
       message: error.message

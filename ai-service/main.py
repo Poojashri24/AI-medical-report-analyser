@@ -1,4 +1,5 @@
-from fastapi import UploadFile, File
+from fastapi import FastAPI, UploadFile, File
+app = FastAPI()
 
 @app.post("/extract-text")
 async def extract_text(file: UploadFile = File(...)):

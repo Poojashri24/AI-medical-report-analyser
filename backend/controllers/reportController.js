@@ -1,6 +1,7 @@
 const Report = require("../models/Report");
+const axios = require("axios");
+const FormData = require("form-data");
 const fs = require("fs");
-const pdfParse = require("pdf-parse");
 
 exports.uploadReport = async (req, res) => {
   try {
@@ -10,11 +11,24 @@ exports.uploadReport = async (req, res) => {
       });
     }
 
-    const pdfBuffer = fs.readFileSync(req.file.path);
+    // Send file to AI Service
+    const formData = new FormData();
 
-    const pdfData = await pdfParse(pdfBuffer);
+    formData.append(
+      "file",
+      fs.createReadStream(req.file.path)
+    );
 
-    const extractedText = pdfData.text;
+    const aiResponse = await axios.post(
+      "https://mediassist-ai-6r19.onrender.com/extract-text",
+      formData,
+      {
+        headers: formData.getHeaders()
+      }
+    );
+
+    const extractedText =
+      aiResponse.data.text || "";
 
     const report = await Report.create({
       user: req.user.id,
@@ -23,6 +37,7 @@ exports.uploadReport = async (req, res) => {
       extractedText
     });
 
+    // Delete uploaded file
     if (fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -33,7 +48,8 @@ exports.uploadReport = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
+
+    console.log(error.response?.data || error);
 
     res.status(500).json({
       message: error.message
@@ -43,6 +59,7 @@ exports.uploadReport = async (req, res) => {
 
 exports.getMyReports = async (req, res) => {
   try {
+
     const reports = await Report.find({
       user: req.user.id
     }).sort({ createdAt: -1 });
@@ -50,6 +67,7 @@ exports.getMyReports = async (req, res) => {
     res.json(reports);
 
   } catch (error) {
+
     res.status(500).json({
       message: error.message
     });

@@ -1,111 +1,54 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import UploadFile, File
 
-import fitz
-
-from groq import Groq
-from dotenv import load_dotenv
-
-import pytesseract
-from PIL import Image
-import io
-import os
-import json
-
-# ==================================================
-# LOAD ENV VARIABLES
-# ==================================================
-from pathlib import Path
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY not found")
-
-client = Groq(api_key=GROQ_API_KEY)
-
-MODEL_NAME = "llama-3.1-8b-instant"
-
-# ==================================================
-# TESSERACT PATH (WINDOWS)
-# ==================================================
-# pytesseract.pytesseract.tesseract_cmd = (
-#   r"C:\Program Files\Tesseract-OCR\tesseract.exe")
-
-# ==================================================
-# FASTAPI APP
-# ==================================================
-app = FastAPI()
-
-# ==================================================
-# CORS
-# ==================================================
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ==================================================
-# LOAD EMBEDDING MODEL
-# ==================================================
-
-
-
-# ==================================================
-# REQUEST MODELS
-# ==================================================
-class FileRequest(BaseModel):
-    file_path: str
-
-
-class ChatRequest(BaseModel):
-    report_text: str = ""
-    question: str
-
-
-# ==================================================
-# HOME ROUTE
-# ==================================================
-@app.get("/")
-def home():
-    return {
-        "message": "FAISS + OCR + Groq AI Service Running"
-    }
-
-
-# ==================================================
-# PDF TEXT EXTRACTION + OCR
-# ==================================================
 @app.post("/extract-text")
-def extract_text(data: FileRequest):
+async def extract_text(file: UploadFile = File(...)):
     try:
+
         text = ""
-        doc = fitz.open(data.file_path)
 
-        # Normal PDF text extraction
-        for page in doc:
-            text += page.get_text()
+        # PDF
+        if file.filename.lower().endswith(".pdf"):
 
-        # If no text found -> OCR
-        if len(text.strip()) < 30:
-            ocr_text = ""
+            pdf_bytes = await file.read()
+
+            doc = fitz.open(
+                stream=pdf_bytes,
+                filetype="pdf"
+            )
 
             for page in doc:
-                pix = page.get_pixmap()
-                img_bytes = pix.tobytes("png")
-                img = Image.open(io.BytesIO(img_bytes))
+                text += page.get_text()
 
-                ocr_text += pytesseract.image_to_string(img)
+            # OCR if scanned PDF
+            if len(text.strip()) < 30:
 
-            text = ocr_text
+                ocr_text = ""
+
+                for page in doc:
+                    pix = page.get_pixmap()
+
+                    img_bytes = pix.tobytes("png")
+
+                    img = Image.open(
+                        io.BytesIO(img_bytes)
+                    )
+
+                    ocr_text += (
+                        pytesseract.image_to_string(img)
+                    )
+
+                text = ocr_text
+
+        # IMAGE
+        else:
+
+            image_bytes = await file.read()
+
+            img = Image.open(
+                io.BytesIO(image_bytes)
+            )
+
+            text = pytesseract.image_to_string(img)
 
         return {
             "success": True,
@@ -113,124 +56,8 @@ def extract_text(data: FileRequest):
         }
 
     except Exception as e:
+
         return {
             "success": False,
             "error": str(e)
         }
-
-
-# ==================================================
-# CHAT WITH RAG
-# ==================================================
-# ==================================================
-# CHAT
-# ==================================================
-@app.post("/chat")
-def chat(data: ChatRequest):
-    try:
-        question = data.question.strip()
-
-        prompt = f"""
-You are a professional healthcare AI assistant.
-
-Patient Report:
-{data.report_text}
-
-Question:
-{question}
-
-Instructions:
-- Explain clearly in simple language
-- Mention possible meaning
-- Suggest healthy next steps
-- Do not give final diagnosis
-- Keep answers concise and easy to understand
-"""
-
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0.4
-        )
-
-        answer = response.choices[0].message.content
-
-        return {
-            "answer": answer
-        }
-
-    except Exception as e:
-        return {
-            "answer": f"Error: {str(e)}"
-        }
-
-
-# ==================================================
-# EXTRACT LAB VALUES
-# ==================================================
-@app.post("/extract-labs")
-def extract_labs(data: ChatRequest):
-    try:
-        report_text = data.report_text
-
-        prompt = f"""
-You are a medical data extraction assistant.
-
-Read the medical report carefully.
-
-Extract all test names with numeric values.
-
-Return ONLY valid JSON.
-
-Example:
-{{
-  "Blood Sugar": 182,
-  "Hemoglobin": 10.4,
-  "Cholesterol": 245,
-  "Creatinine": 1.2,
-  "Vitamin D": 18
-}}
-
-Report:
-{report_text}
-"""
-
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            temperature=0,
-        )
-
-        result = response.choices[0].message.content.strip()
-
-        # Clean markdown json if present
-        result = result.replace("```json", "").replace("```", "").strip()
-
-        # Validate JSON
-        parsed = json.loads(result)
-
-        return {
-            "data": json.dumps(parsed)
-        }
-
-    except Exception as e:
-        return {
-            "data": "{}",
-            "error": str(e)
-        }
-
-
-# ==================================================
-# RUN:
-# uvicorn main:app --reload --port 8000
-# ==================================================

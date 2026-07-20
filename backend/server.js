@@ -2,6 +2,11 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
+
+const result = dotenv.config();
+
+console.log(result);
+console.log("MONGO_URI:", process.env.MONGO_URI);
 dotenv.config();
 
 const connectDB = require("./config/db");
